@@ -99,7 +99,6 @@ void parse_args(int argc, char *argv[]){
         print_best_solution();
 
 	    free_memory();
-	    w_free_memory();
     }
 
     else if ( string(argv[1]).compare(string("-s")) == 0 )

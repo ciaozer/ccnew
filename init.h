@@ -39,7 +39,7 @@ void init()
 
 		if (sat_count[i] == 0) 
         {
-            unsat(i);
+            conflict(i);
         }
 	}
 	for ( int i=0; i<elementnum; i++ ) 
@@ -57,7 +57,7 @@ void init()
 
 		if (sat_count[i+edgenum] == 0) 
         {
-            unsat(i);
+            uncovered(i);
         }
 	}
 

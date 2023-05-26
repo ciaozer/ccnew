@@ -3,49 +3,40 @@
 
 #include "build.h"
 
-inline void unsat(int clause)
+inline void uncovered(int element_index)
 {
-    if(org_clause_weight[clause]==top_clause_weight) 
-    {
-        index_in_conflict_edge_stack[clause] = conflict_edge_stack_count;
-        push(clause,conflict_edge_stack);
-    }
-    else {
-        index_in_softunsat_stack[clause] = uncovered_stack_count;
-        push(clause,uncovered_stack);
-        
-        current_uncovered_weight += original_weight[clause-edgenum];
-    }   
+    index_in_softunsat_stack[element_index] = uncovered_stack_count;
+    push(element_index,uncovered_stack);
+    current_uncovered_weight += original_weight[element_index-edgenum];
 }
 
-inline void sat(int clause)
+inline void covered(int element_index)
 {
-	int index,last_unsat_clause;
+    int last_uncovered_element = pop(uncovered_stack);
+    int index_for_last = index_in_softunsat_stack[element_index];
+    uncovered_stack[index_for_last] = last_uncovered_element;
+    index_in_softunsat_stack[last_uncovered_element] = index_for_last;
+    current_uncovered_weight -= original_weight[element_index-edgenum];
+}
 
-    if (org_clause_weight[clause]==top_clause_weight) 
-    {
-        last_unsat_clause = pop(conflict_edge_stack);
+inline void conflict(int edge_index)
+{
+    index_in_conflict_edge_stack[edge_index] = conflict_edge_stack_count;
+    push(edge_index,conflict_edge_stack);   
+}
 
-        index = index_in_conflict_edge_stack[clause];
-        conflict_edge_stack[index] = last_unsat_clause;
-        index_in_conflict_edge_stack[last_unsat_clause] = index;
-    }
-    else {
-        last_unsat_clause = pop(uncovered_stack);
-
-        index = index_in_softunsat_stack[clause];
-        uncovered_stack[index] = last_unsat_clause;
-        index_in_softunsat_stack[last_unsat_clause] = index;
-        
-        current_uncovered_weight -= original_weight[clause-edgenum];
-    }
+inline void deconflict(int edge_index)
+{
+    int last_conflict_edge = pop(conflict_edge_stack);
+    int index_for_last = index_in_conflict_edge_stack[edge_index];
+    conflict_edge_stack[index_for_last] = last_conflict_edge;
+    index_in_conflict_edge_stack[last_conflict_edge] = index_for_last;
 }
 
 void flip(int flipvar)
 {
 	int i,v,c;
 	int index;
-	lit* clause_c;
 
 	int org_flipvar_hscore = item_conflict_times[flipvar];
     int org_flipvar_sscore = score[flipvar];
@@ -70,7 +61,7 @@ void flip(int flipvar)
                 item_conflict_times[item2]--;
                 hard_cscc[item1] = 1;
                 hard_cscc[item2] = 1;
-                sat(cur_edge);
+                deconflict(cur_edge);
             }
         }
         else
@@ -100,15 +91,13 @@ void flip(int flipvar)
                 hard_cscc[item1] = 1;
                 hard_cscc[item2] = 1;
                 
-                unsat(cur_edge); 
+                conflict(cur_edge); 
             }//end else if
         }
     }
 
 	for( int i=0; i<m_item_count[flipvar]; i++ )
     {
-		c = var_lit[flipvar][i+g_adj_count[flipvar]].clause_num;
-		clause_c = clause_lit[c];
         int cur_ele = m_item[flipvar][i];
 
         if(current_solution[flipvar] == 1)
@@ -126,7 +115,7 @@ void flip(int flipvar)
                     int cur_item = n_ele[cur_ele][j];
                     score[cur_item] -= original_weight[cur_ele];
                 }
-                sat(cur_ele+edgenum);
+                covered(cur_ele+edgenum);
             }
         }
         else 
@@ -152,7 +141,7 @@ void flip(int flipvar)
                     int cur_item = n_ele[cur_ele][j];
                     score[cur_item] += original_weight[cur_ele];
                 }
-                unsat(cur_ele+edgenum); 
+                uncovered(cur_ele+edgenum); 
             }   
         }
 	}
@@ -177,9 +166,9 @@ void flip(int flipvar)
 	}
 
 	//add goodvar
-	for(i=0; i<var_neighbor_count[flipvar]; ++i)   //从邻居中寻找新的好变元
+	for(i=0; i<neighbor_count[flipvar]; ++i)   //从邻居中寻找新的好变元
 	{
-		v = var_neighbor[flipvar][i];
+		v = neighbor[flipvar][i];
 		
 		conf_change[v] = 1;
 		
@@ -207,7 +196,7 @@ int pick_var()
 	
 	int best_var;
 	
-	if( (random()%MY_RAND_MAX_INT)*BASIC_SCALE< pacprob ) //随机游走概率
+	if( (random()%MY_RAND_MAX_INT)*BASIC_SCALE< p_random_walk ) //随机游走概率
 	{
 		if (conflict_edge_stack_count>0) 
         {
@@ -221,7 +210,7 @@ int pick_var()
         }
 	}
 	
-	if( (random()%MY_RAND_MAX_INT)*BASIC_SCALE< prob )
+	if( (random()%MY_RAND_MAX_INT)*BASIC_SCALE< p_without_hard_conf )
 	{
 		if( conflict_edge_stack_count > 0 ) 
         {

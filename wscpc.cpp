@@ -10,7 +10,6 @@ void interrupt(int sig)
 		cout << "c verified" << endl;
 	print_best_solution();
 	free_memory();
-    w_free_memory();
 	exit(10);
 }
 
