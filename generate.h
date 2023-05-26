@@ -177,13 +177,13 @@ void change_to_maxsat(char *input_filename, char *output_filename)
 
     const int INF = total_weight + 1;
 
-    int conflict_cnt = 0;
+    int edgenum = 0;
 
     for ( int i=1; i<=itemnum; i++ )
     {
-        conflict_cnt += g_item_count[i];
+        edgenum += g_item_count[i];
     }
-    conflict_cnt = conflict_cnt / 2;        //会重复计算所以除以2
+    edgenum = edgenum / 2;        //会重复计算所以除以2
 
     ofstream outfile;
     outfile.open(output_filename, ios::out);
@@ -194,7 +194,7 @@ void change_to_maxsat(char *input_filename, char *output_filename)
         return;
     }
 
-    outfile << "p wcnf " << itemnum << " " << conflict_cnt + elementnum << " " << INF << endl;
+    outfile << "p wcnf " << itemnum << " " << edgenum + elementnum << " " << INF << endl;
 
     for (int i = 1; i <= itemnum; i++)
     {

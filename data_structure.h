@@ -57,7 +57,6 @@ int* temp_neighbor;
 int temp_neighbor_count;
 
 int*	hard_cscc;
-int*	is_hard_clause;
 
 long long     top_clause_weight;
 long long*    org_clause_weight;	
@@ -75,6 +74,10 @@ int*    conflict_stack;
 int     conflict_stack_count;
 int*    index_in_conflict_stack;
 bool*   is_in_conflict_stack;
+int     edgenum;
+int**   edge;
+int**   g_adj;
+int*    g_adj_count;
 
 int*	goodvar_stack;		
 int		goodvar_stack_count;

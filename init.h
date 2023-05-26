@@ -24,16 +24,16 @@ void init()
     solution_stack_count = 0;
     
 	/* figure out sat_count, and init unsat_stack */
-	for ( int i=0; i<num_clauses; i++ ) 
+	for( int i=0; i<edgenum; i++ )
 	{
 		sat_count[i] = 0;
 		
-		for( int j=0; j<clause_lit_count[i]; j++ )
+		for( int j=0; j<2; j++ )
 		{
-			if (current_solution[clause_lit[i][j].var_num] == clause_lit[i][j].sense)
+			if ( current_solution[edge[i][j]] == 0 )
 			{
 				sat_count[i]++;
-				sat_var[i] = clause_lit[i][j].var_num;	
+				sat_var[i] = edge[i][j];	
 			}
 		}
 
@@ -42,24 +42,43 @@ void init()
             unsat(i);
         }
 	}
+	for ( int i=0; i<elementnum; i++ ) 
+	{
+		sat_count[i+edgenum] = 0;
+		
+		for( int j=0; j<n_ele_count[i]; j++ )
+		{
+			if ( current_solution[n_ele[i][j]] == 1 )
+			{
+				sat_count[i+edgenum]++;
+				sat_var[i+edgenum] = n_ele[i][j];	
+			}
+		}
+
+		if (sat_count[i+edgenum] == 0) 
+        {
+            unsat(i);
+        }
+	}
 
 	/*figure out score*/
-	for ( int v=1; v<=itemnum; v++) 
+	int tmp_item_conflict_times[itemnum+10];
+	int tmp_score[itemnum+10];
+	for( int i=1; i<=itemnum; i++ )
 	{
-		item_conflict_times[v]=score[v]=0;
-		for(int i=0; i<var_lit_count[v]; ++i)
+		item_conflict_times[i] = 0;
+		score[i] = 0;
+		for( int j=0; j<g_adj_count[i]; j++ )
 		{
-			int c = var_lit[v][i].clause_num;
-            if (org_clause_weight[c]==top_clause_weight)
-            {
-                if (sat_count[c]==0) item_conflict_times[v]++;
-                else if (sat_count[c]==1 && var_lit[v][i].sense==current_solution[v]) item_conflict_times[v]--;
-            }
-            else
-            {
-                if (sat_count[c]==0) score[v]+=org_clause_weight[c];
-                else if (sat_count[c]==1 && var_lit[v][i].sense==current_solution[v]) score[v]-=org_clause_weight[c];
-            }
+			int cur_edge = g_adj[i][j];
+			if (sat_count[cur_edge]==0) item_conflict_times[i]++;
+            else if (sat_count[cur_edge]==1 && current_solution[i] == 0) item_conflict_times[i]--;
+		}
+		for( int j=0; j<m_item_count[i]; j++ )
+		{
+			int cur_ele = m_item[i][j];
+			if (sat_count[cur_ele+edgenum]==0) score[i]+=original_weight[cur_ele];
+            else if (sat_count[cur_ele+edgenum]==1 && current_solution[i] == 1) score[i]-=original_weight[cur_ele];
 		}
 	}
 		

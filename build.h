@@ -6,7 +6,7 @@
 void settings()
 {
     seed = 1;
-    cutoff_time = 1000;
+    cutoff_time = 10;
     pacprob = 0.01;
     rdprob = 0.6;
     prob = 0.2;
@@ -23,6 +23,8 @@ void w_allocate_memory()
     g_item = new int *[malloc_item];
     n_ele_count = new int[malloc_element];
     n_ele = new int *[malloc_element];
+    g_adj_count = new int[malloc_item];
+    g_adj = new int *[malloc_item]; 
 
     original_weight = new long long[malloc_element];
 
@@ -43,6 +45,7 @@ void w_free_memory()
         delete[] m_item[i];
         delete[] g_item[i];
         //delete[] neighbor[i];
+        delete[] g_adj[i];
     }
 
     for( int i=0; i<elementnum; i++ )
@@ -56,6 +59,8 @@ void w_free_memory()
     delete[] g_item_count;
     delete[] n_ele;
     delete[] n_ele_count;
+    delete[] g_adj;
+    delete[] g_adj_count;
 
     delete[] original_weight;
 
@@ -132,6 +137,7 @@ void build(char *filename)
         //读入该集合冲突的集合
         infile >> g_item_count[i];
         g_item[i] = new int[g_item_count[i]+1];
+        g_adj[i] = new int[g_item_count[i]+1];
 
         for( int it=0; it<g_item_count[i]; it++ )
         {
@@ -164,23 +170,27 @@ void build(char *filename)
 
 	top_clause_weight = total_weight + 1;
 
-	int conflict_cnt = 0;
+	edgenum = 0;
 	for ( int i=1; i<=itemnum; i++ )
     {
-        conflict_cnt += g_item_count[i];
+        edgenum += g_item_count[i];
     }
-    conflict_cnt = conflict_cnt / 2;        //会重复计算所以除以2
+    edgenum = edgenum / 2;        //会重复计算所以除以2
 
-	num_clauses = conflict_cnt+elementnum;
+	num_clauses = edgenum+elementnum;
 
 	allocate_memory();
 	for (int v=1; v<=itemnum; ++v)
 		var_lit_count[v] = 0;
     
-    num_hclauses = conflict_cnt;
+    num_hclauses = edgenum;
 	num_sclauses = elementnum;
 
 	int c=0;
+    for( int i=1; i<=itemnum; i++ )
+    {
+        g_adj_count[i] = 0;
+    }
 	for (int i = 1; i <=itemnum; i++)
     {
 		for( int j=0; j<g_item_count[i]; j++ )
@@ -197,8 +207,14 @@ void build(char *filename)
 				clause_lit[c][1].sense = 0;
 				clause_lit[c][2].var_num=0; 
             	clause_lit[c][2].clause_num = -1;
-				is_hard_clause[c] = 1;
 				org_clause_weight[c] = top_clause_weight;
+                edge[c] = new int[3];
+                edge[c][0] = i;
+                edge[c][1] = g_item[i][j];
+                g_adj[i][g_adj_count[i]] = c;
+                g_adj_count[i]++;
+                g_adj[g_item[i][j]][g_adj_count[g_item[i][j]]] = c;
+                g_adj_count[g_item[i][j]]++;
 				c++;
 			}
 		}
@@ -213,7 +229,6 @@ void build(char *filename)
 			clause_lit[c][j].clause_num = c;
 			clause_lit[c][j].var_num = n_ele[i][j];
 			clause_lit[c][j].sense = 1;
-			is_hard_clause[c] = 0;
 		}
 		clause_lit[c][j].var_num=0; 
         clause_lit[c][j].clause_num = -1;
@@ -272,7 +287,6 @@ void allocate_memory()
 	
 	clause_lit = new lit* [malloc_clause_length];
 	clause_lit_count = new int [malloc_clause_length];
-	is_hard_clause = new int [malloc_clause_length];
 	org_clause_weight = new long long [malloc_clause_length];
 	sat_count = new int [malloc_clause_length];
 	sat_var = new int [malloc_clause_length];
@@ -280,6 +294,8 @@ void allocate_memory()
 	index_in_conflict_edge_stack = new int [malloc_clause_length];
 	uncovered_stack = new int [malloc_clause_length];
 	index_in_softunsat_stack = new int [malloc_clause_length];
+
+    edge = new int*[edgenum+10];
 }
 
 void free_memory()
@@ -291,6 +307,12 @@ void free_memory()
 		delete[] var_lit[i];
 		delete[] var_neighbor[i];
 	}
+
+    for( int i=0; i<edgenum; i++ )
+    {
+        delete[] edge[i];
+    }
+    delete[] edge;
 	
 	delete [] var_lit;
 	delete [] var_lit_count;
@@ -318,7 +340,6 @@ void free_memory()
 	delete [] clause_lit;
 	delete [] clause_lit_count;
 	delete [] hard_cscc;
-	delete [] is_hard_clause;
 	delete [] org_clause_weight;
 	delete [] sat_count;
 	delete [] sat_var;
