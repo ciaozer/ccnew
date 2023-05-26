@@ -149,6 +149,10 @@ void build(char *filename)
 
     infile.close();
 
+    for( int i=1; i<=itemnum; i++ )
+    {
+        sort(m_item[i], m_item[i]+m_item_count[i]);
+    }
     //建立n_ele关系
     for( int i=0; i<elementnum; i++ )
     {

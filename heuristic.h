@@ -14,7 +14,7 @@ inline void unsat(int clause)
         index_in_softunsat_stack[clause] = uncovered_stack_count;
         push(clause,uncovered_stack);
         
-        current_uncovered_weight += org_clause_weight[clause];
+        current_uncovered_weight += original_weight[clause-edgenum];
     }   
 }
 
@@ -37,7 +37,7 @@ inline void sat(int clause)
         uncovered_stack[index] = last_unsat_clause;
         index_in_softunsat_stack[last_unsat_clause] = index;
         
-        current_uncovered_weight -= org_clause_weight[clause];
+        current_uncovered_weight -= original_weight[clause-edgenum];
     }
 }
 
@@ -51,106 +51,109 @@ void flip(int flipvar)
     int org_flipvar_sscore = score[flipvar];
 	current_solution[flipvar] = 1 - current_solution[flipvar];
 
-    for(i=0; i<var_lit_count[flipvar]; ++i)   //所有该变元出现的子句
-	{
-		c = var_lit[flipvar][i].clause_num;
-		clause_c = clause_lit[c];
-        
-        if (org_clause_weight[c]==top_clause_weight)   //硬子句
+    for( int i=0; i<g_adj_count[flipvar]; i++ )
+    {
+        int cur_edge = g_adj[flipvar][i];
+        if( current_solution[flipvar] == 0 )
         {
-            if(current_solution[flipvar] == var_lit[flipvar][i].sense)  //该变元现在能够满足该子句
-            {
-                ++sat_count[c];
-                
-                if (sat_count[c] == 2) //sat_count from 1 to 2
-                    item_conflict_times[sat_var[c]] ++;
-                else if (sat_count[c] == 1) // sat_count from 0 to 1
-                {
-                    sat_var[c] = flipvar;//record the only true lit's var
-                    
-                    for(lit* p=clause_c; (v=p->var_num)!=0; p++) 
-                    {
-                    	item_conflict_times[v] --;
-                    	
-                    	//hscc
-                    	hard_cscc[v] = 1;
-                    }
-                    
-                    sat(c);
-                }
-            }
-            else // current_solution[flipvar] != cur_lit.sense不能满足现在的子句
-            {
-                --sat_count[c];
-                if (sat_count[c] == 1) //sat_count from 2 to 1
-                {
-                    for(lit* p=clause_c; (v=p->var_num)!=0; p++) 
-                    {
-                        if(p->sense == current_solution[v] )
-                        {
-                            item_conflict_times[v] --;
-                            sat_var[c] = v;
-                            break;
-                        }
-                    }
+            sat_count[cur_edge]++;
 
-                }
-                else if (sat_count[c] == 0) //sat_count from 1 to 0
-                {
-                    for(lit* p=clause_c; (v=p->var_num)!=0; p++) 
-                    {
-                    	item_conflict_times[v] ++;
-                    	
-                    	//hscc
-                    	hard_cscc[v] = 1;
-                    }
-                    
-                    unsat(c); 
-                    
-                }//end else if
-                
-            }//end else
-		
-        }
-        else   //软子句
-        {
-            if(current_solution[flipvar] == var_lit[flipvar][i].sense)
+            if (sat_count[cur_edge] == 2) //sat_count from 1 to 2
+                item_conflict_times[sat_var[cur_edge]] ++;
+            else if (sat_count[cur_edge] == 1) // sat_count from 0 to 1
             {
-                ++sat_count[c];
+                sat_var[cur_edge] = flipvar;//record the only true lit's var
                 
-                if (sat_count[c] == 2) //sat_count from 1 to 2
-                    score[sat_var[c]] += org_clause_weight[c];
-                else if (sat_count[c] == 1) // sat_count from 0 to 1
+                int item1 = edge[cur_edge][0];
+                int item2 = edge[cur_edge][1];
+                item_conflict_times[item1]--;
+                item_conflict_times[item2]--;
+                hard_cscc[item1] = 1;
+                hard_cscc[item2] = 1;
+                sat(cur_edge);
+            }
+        }
+        else
+        {
+            sat_count[cur_edge]--;
+            if (sat_count[cur_edge] == 1) //sat_count from 2 to 1
+            {
+                int item1 = edge[cur_edge][0];
+                int item2 = edge[cur_edge][1];
+                if( current_solution[item1] == 0 )
                 {
-                    sat_var[c] = flipvar;//record the only true lit's var
-                    
-                    for(lit* p=clause_c; (v=p->var_num)!=0; p++) score[v] -= org_clause_weight[c];
-                    
-                    sat(c);
+                    item_conflict_times[item1]--;
+                    sat_var[cur_edge] = item1;
+                }
+                else
+                {
+                    item_conflict_times[item2]--;
+                    sat_var[cur_edge] = item2;
                 }
             }
-            else // current_solution[flipvar] != cur_lit.sense
+            else if (sat_count[cur_edge] == 0) //sat_count from 1 to 0
             {
-                --sat_count[c];
-                if (sat_count[c] == 1) //sat_count from 2 to 1
+                int item1 = edge[cur_edge][0];
+                int item2 = edge[cur_edge][1];
+                item_conflict_times[item1]++;
+                item_conflict_times[item2]++;
+                hard_cscc[item1] = 1;
+                hard_cscc[item2] = 1;
+                
+                unsat(cur_edge); 
+            }//end else if
+        }
+    }
+
+	for( int i=0; i<m_item_count[flipvar]; i++ )
+    {
+		c = var_lit[flipvar][i+g_adj_count[flipvar]].clause_num;
+		clause_c = clause_lit[c];
+        int cur_ele = m_item[flipvar][i];
+
+        if(current_solution[flipvar] == 1)
+        {
+            ++sat_count[cur_ele+edgenum];
+            
+            if (sat_count[cur_ele+edgenum] == 2) //sat_count from 1 to 2
+                score[sat_var[cur_ele+edgenum]] += original_weight[cur_ele];
+            else if (sat_count[cur_ele+edgenum] == 1) // sat_count from 0 to 1
+            {
+                sat_var[cur_ele+edgenum] = flipvar;//record the only true lit's var
+                
+                for( int j=0; j<n_ele_count[cur_ele]; j++ )
                 {
-                    for(lit* p=clause_c; (v=p->var_num)!=0; p++) 
+                    int cur_item = n_ele[cur_ele][j];
+                    score[cur_item] -= original_weight[cur_ele];
+                }
+                sat(cur_ele+edgenum);
+            }
+        }
+        else 
+        {
+            --sat_count[cur_ele+edgenum];
+            if (sat_count[cur_ele+edgenum] == 1) //sat_count from 2 to 1
+            {
+                for( int j=0; j<n_ele_count[cur_ele]; j++ )
+                {
+                    int cur_item = n_ele[cur_ele][j];
+                    if( current_solution[cur_item] == 1 )
                     {
-                        if(p->sense == current_solution[v] )
-                        {
-                            score[v] -= org_clause_weight[c];
-                            sat_var[c] = v;
-                            break;
-                        }
+                        score[cur_item] -= original_weight[cur_ele];
+                        sat_var[cur_ele+edgenum] = cur_item;
+                        break;
                     }
                 }
-                else if (sat_count[c] == 0) //sat_count from 1 to 0
+            }
+            else if (sat_count[cur_ele+edgenum] == 0) //sat_count from 1 to 0
+            {
+                for( int j=0; j<n_ele_count[cur_ele]; j++ )
                 {
-                    for(lit* p=clause_c; (v=p->var_num)!=0; p++) score[v] += org_clause_weight[c];
-                    unsat(c); 
-                }//end else if
-                
-            }//end else
+                    int cur_item = n_ele[cur_ele][j];
+                    score[cur_item] += original_weight[cur_ele];
+                }
+                unsat(cur_ele+edgenum); 
+            }   
         }
 	}
 
@@ -197,8 +200,6 @@ void flip(int flipvar)
 int pick_var()
 {
 	int c,i,v;
-	int sel_c;
-	lit *p;
 	int best_hscore;
 	int best_sscore;
 	int best_score;
@@ -208,38 +209,65 @@ int pick_var()
 	
 	if( (random()%MY_RAND_MAX_INT)*BASIC_SCALE< pacprob ) //随机游走概率
 	{
-		if (conflict_edge_stack_count>0) sel_c = conflict_edge_stack[random()%conflict_edge_stack_count];
-		else sel_c= uncovered_stack[random()%uncovered_stack_count];
-		return clause_lit[sel_c][random()%clause_lit_count[sel_c]].var_num;
+		if (conflict_edge_stack_count>0) 
+        {
+            int selected_edge = conflict_edge_stack[random()%conflict_edge_stack_count];
+            return edge[selected_edge][random()%2];
+        }
+		else 
+        {
+            int selected_element = uncovered_stack[random()%uncovered_stack_count]-edgenum;
+            return n_ele[selected_element][random()%n_ele_count[selected_element]];
+        }
 	}
 	
 	if( (random()%MY_RAND_MAX_INT)*BASIC_SCALE< prob )
 	{
-		if (conflict_edge_stack_count>0) sel_c = conflict_edge_stack[random()%conflict_edge_stack_count];
-		else sel_c= uncovered_stack[random()%uncovered_stack_count];
+		if( conflict_edge_stack_count > 0 ) 
+        {
+            int selected_edge = conflict_edge_stack[random()%conflict_edge_stack_count];
+            int item1 = edge[selected_edge][0];
+            int item2 = edge[selected_edge][1];
+            if( score[item1] > score[item2] )
+            {
+                return item1;
+            }
+            else if( score[item2] > score[item1] )
+            {
+                return item2;
+            }
+            else
+            {
+                return edge[selected_edge][random()%2];
+            }
+        }
+		else 
+        {
+            int selected_element= uncovered_stack[random()%uncovered_stack_count]-edgenum;
 		
-		v = clause_lit[sel_c][0].var_num;
-		best_array[0] = v;
-		best_count = 1;
-		best_sscore = score[v];
-		
-		for(i=1; i<clause_lit_count[sel_c]; i++)
-		{
-			v = clause_lit[sel_c][i].var_num;
-			
-			if(score[v]>best_sscore)
-			{
-				best_array[0] = v;
-				best_count = 1;
-				best_sscore = score[v];
-			}
-			else if(score[v]==best_sscore)
-			{
-				best_array[best_count++] = v;
-			}
-		}
-		
-		return best_array[random()%best_count]; //平局随机选
+            v = n_ele[selected_element][0];
+		    best_array[0] = v;
+		    best_count = 1;
+		    best_sscore = score[v];
+    
+		    for(i=1; i<n_ele_count[selected_element]; i++)
+		    {
+		    	v = n_ele[selected_element][i];
+    
+		    	if(score[v]>best_sscore)
+		    	{
+		    		best_array[0] = v;
+		    		best_count = 1;
+		    		best_sscore = score[v];
+		    	}
+		    	else if(score[v]==best_sscore)
+		    	{
+		    		best_array[best_count++] = v;
+		    	}
+		    }
+    
+		    return best_array[random()%best_count]; //平局随机选
+        }
 	}
 	
 
@@ -313,30 +341,33 @@ int pick_var()
 	
 	for(i=0; i<conflict_edge_stack_count; i++)
 	{
-		c = conflict_edge_stack[i];
-		p = clause_lit[c];
-		for(; (v=p->var_num)!=0; p++)
-		{
-			if(conf_change[v]==1 && already_in_ccmpvars[v] != step)
-			{
-				ccmpvars[ccmpvars_count++] = v;
-				already_in_ccmpvars[v] = step;
-			}
-		}
+		int cur_edge = conflict_edge_stack[i];
+        int item1 = edge[cur_edge][0];
+        int item2 = edge[cur_edge][1];
+        if( conf_change[item1] == 1 && already_in_ccmpvars[item1] != step )
+        {
+            ccmpvars[ccmpvars_count++] = item1;
+			already_in_ccmpvars[item1] = step;
+        }
+        if( conf_change[item2] == 1 && already_in_ccmpvars[item2] != step )
+        {
+            ccmpvars[ccmpvars_count++] = item2;
+			already_in_ccmpvars[item2] = step;
+        }
 	}
 	
 	for(i=0; i<uncovered_stack_count; i++)
 	{
-		c = uncovered_stack[i];
-		p = clause_lit[c];
-		for(; (v=p->var_num)!=0; p++)
-		{
-			if(conf_change[v]==1 && already_in_ccmpvars[v] != step)
+		int cur_ele = uncovered_stack[i]-edgenum;
+        for( int j=0; j<n_ele_count[cur_ele]; j++ )
+        {
+            int cur_item = n_ele[cur_ele][j];
+            if(conf_change[cur_item]==1 && already_in_ccmpvars[cur_item] != step)
 			{
-				ccmpvars[ccmpvars_count++] = v;
-				already_in_ccmpvars[v] = step;
+				ccmpvars[ccmpvars_count++] = cur_item;
+				already_in_ccmpvars[cur_item] = step;
 			}
-		}
+        }
 	}
 	
 	if(ccmpvars_count>0)
@@ -377,9 +408,16 @@ int pick_var()
 	}
 	else
 	{
-		if (conflict_edge_stack_count>0) sel_c = conflict_edge_stack[random()%conflict_edge_stack_count];
-		else sel_c= uncovered_stack[random()%uncovered_stack_count];
-		return clause_lit[sel_c][random()%clause_lit_count[sel_c]].var_num;
+		if (conflict_edge_stack_count>0) 
+        {
+            int selected_edge = conflict_edge_stack[random()%conflict_edge_stack_count];
+            return edge[selected_edge][random()%2];
+        }
+		else 
+        {
+            int selected_element = uncovered_stack[random()%uncovered_stack_count]-edgenum;
+            return n_ele[selected_element][random()%n_ele_count[selected_element]];
+        }
 	}
 }
 

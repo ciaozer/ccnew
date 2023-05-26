@@ -12,6 +12,7 @@
 #include <string.h>
 #include <sys/times.h>
 #include <unistd.h>
+#include <algorithm>
 
 using namespace std;
 
