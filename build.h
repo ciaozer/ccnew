@@ -6,7 +6,7 @@
 void settings()
 {
     seed = 1;
-    cutoff_time = 10;
+    cutoff_time = 1000;
     p_random_walk = 0.01;
     rdprob = 0.6;
     p_without_hard_conf = 0.2;
@@ -27,7 +27,6 @@ void w_allocate_memory()
     g_adj = new int *[malloc_item]; 
     neighbor_count = new int[malloc_item];
     neighbor = new int *[malloc_item];
-
     original_weight = new long long[malloc_element];
 
     conflict_stack = new int[malloc_item];
@@ -38,6 +37,16 @@ void w_allocate_memory()
     index_in_solution_stack = new int[malloc_item];
 
     element_cover_times = new int[malloc_element];
+    only_cover_item = new int[malloc_element];
+    item_conflict_times = new int [malloc_item];
+    score = new long long [malloc_item];
+	conf_change = new int [malloc_item];
+	time_stamp = new long long [malloc_item];
+	gooditem_stack = new int [malloc_item];
+	is_in_gooditem_stack = new bool [malloc_item];
+	current_solution = new int [malloc_item];
+	best_solution = new int [malloc_item];
+	already_in_ccmpvars = new unsigned int [malloc_item];
 }
 
 void allocate_memory()
@@ -47,26 +56,15 @@ void allocate_memory()
     int malloc_elementnum = elementnum+10;
 	
 	hard_cscc = new int [malloc_var_length];
-	item_conflict_times = new int [malloc_var_length];
-	score = new long long [malloc_var_length];
-	conf_change = new int [malloc_var_length];
-	time_stamp = new long long [malloc_var_length];
-	goodvar_stack = new int [malloc_var_length];
-	already_in_goodvar_stack = new int [malloc_var_length];
-	current_solution = new int [malloc_var_length];
-	best_solution = new int [malloc_var_length];
-	best_array = new int [malloc_var_length];
-	already_in_ccmpvars = new unsigned int [malloc_var_length];
-	ccmpvars = new int [malloc_var_length];
 	
-	sat_count = new int [edgenum+elementnum+10];
-	sat_var = new int [edgenum+elementnum+10];
 	conflict_edge_stack = new int [malloc_edgenum];
 	index_in_conflict_edge_stack = new int [malloc_edgenum];
 	uncovered_stack = new int [edgenum+elementnum+10];
-	index_in_softunsat_stack = new int [edgenum+elementnum+10];
+	index_in_uncovered_stack = new int [edgenum+elementnum+10];
 
-    edge = new int*[edgenum+10];
+    edge = new int*[malloc_edgenum];
+    node = new int[malloc_edgenum];
+    edge_node_count = new int[malloc_edgenum];
 }
 
 void free_memory()
@@ -104,32 +102,31 @@ void free_memory()
     delete[] index_in_solution_stack;
 
     delete[] element_cover_times;
+    delete[] only_cover_item;
 
     for( int i=0; i<edgenum; i++ )
     {
         delete[] edge[i];
     }
     delete[] edge;
+    delete[] node; 
+    delete[] edge_node_count;
 	
 	delete [] item_conflict_times;
 	delete [] score;
 	delete [] conf_change;
 	delete [] time_stamp;
-	delete [] goodvar_stack;
-	delete [] already_in_goodvar_stack;
+	delete [] gooditem_stack;
+	delete [] is_in_gooditem_stack;
 	delete [] current_solution;
 	delete [] best_solution;
-	delete [] best_array;
 	delete [] already_in_ccmpvars;
-	delete [] ccmpvars;
 	
 	delete [] hard_cscc;
-	delete [] sat_count;
-	delete [] sat_var;
 	delete [] conflict_edge_stack;
 	delete [] index_in_conflict_edge_stack;
 	delete [] uncovered_stack;
-	delete [] index_in_softunsat_stack;
+	delete [] index_in_uncovered_stack;
 }
 
 void build(char *filename)

@@ -70,28 +70,25 @@ int		conflict_edge_stack_count;
 int*	index_in_conflict_edge_stack;
 int*	uncovered_stack;		
 int		uncovered_stack_count;
-int*	index_in_softunsat_stack;
+int*	index_in_uncovered_stack;
 int*    conflict_stack;
 int     conflict_stack_count;
 int*    index_in_conflict_stack;
 bool*   is_in_conflict_stack;
-int*	goodvar_stack;		
-int		goodvar_stack_count;
-int*	already_in_goodvar_stack;
+int*	gooditem_stack;		
+int		gooditem_stack_count;
+bool*	is_in_gooditem_stack;
 
 //需要维护的变量
 int*        element_cover_times;   //元素被覆盖的次数
+int*        only_cover_item;        //唯一能覆盖该元素的集合
 int*        item_conflict_times;
+int*        node;                   //node[i]表示i号边没选的节点
+int*        edge_node_count;        //edge_node_count[i]表示没选入第i条边的点的数量
 long long*	time_stamp;
 long long*  score;
 int*	    conf_change;
-int*	    hard_cscc;
-int*        sat_count;			
-int*	    sat_var;		
-int*        best_array;
-int         best_count;
+int*	    hard_cscc;			
 unsigned int* already_in_ccmpvars;
-int*        ccmpvars;
-int         ccmpvars_count;
 
 #endif
