@@ -4,24 +4,87 @@
 #include"build.h"
 #include"heuristic.h"
 
-void init()
+void init_tabu()
 {
+	int rand_num, temp_num;
+
+	for( int i=0; i<=itemnum; i++ )
+	{
+		W1[i] = (long long) pow(i+1, 1.2);
+		W2[i] = (long long) pow(i+1, 1.6);
+		W3[i] = (long long) pow(i+1, 2.0);
+	}
+
+	for( int i=0; i<=itemnum; i++ )
+	{
+		while(1)
+		{
+			rand_num =rand()%(itemnum+1);
+			if( rand_num != i )
+				break;
+		}
+		temp_num = W1[i];
+		W1[i] = W1[rand_num];
+		W1[rand_num] = temp_num;
+
+		while(1)
+		{
+			rand_num =rand()%(itemnum+1);
+			if( rand_num != i )
+				break;
+		}
+		temp_num = W2[i];
+		W2[i] = W2[rand_num];
+		W2[rand_num] = temp_num;
+
+		while(1)
+		{
+			rand_num =rand()%(itemnum+1);
+			if( rand_num != i )
+				break;
+		}
+		temp_num = W3[i];
+		W3[i] = W3[rand_num];
+		W3[rand_num] = temp_num;
+	}
+	hx1 = 0;
+	hx2 = 0;
+	hx3 = 0;
+
+	for( int i=0; i<L; i++ )
+	{
+	 	H1[i]=0;
+	    H2[i]=0;
+		H3[i]=0;
+	}
+}
+
+void init_random()
+{
+	init_tabu();
+	solution_stack_count = 0;
 	for ( int i=1; i<=itemnum; i++) 
     {
-        current_solution[i] = random()%2;
+		//if( (random()%1000)/1000.0 < 1.0 )	current_solution[i] = 1;
+		//else current_solution[i] = 0;
+        current_solution[i] = 0;
 		time_stamp[i] = 0;
 		hard_cscc[i] = 1;		
 		conf_change[i] = 1;
-
-        is_in_conflict_stack[i] = 0;
-
+		if( current_solution[i] == 1 )
+		{
+			solution_stack[solution_stack_count] = i;
+			index_in_solution_stack[i] = solution_stack_count;
+			solution_stack_count++;
+			hx1 = (hx1 + W1[i]);
+			hx2 = (hx2 + W2[i]);
+			hx3 = (hx3 + W3[i]);
+		}
 	}
 
     current_uncovered_weight=0;
 	conflict_edge_stack_count = 0;
     uncovered_stack_count = 0;
-    conflict_stack_count = 0;
-    solution_stack_count = 0;
     
 	//初始化覆盖次数和冲突次数
 	for( int i=0; i<edgenum; i++ )
@@ -111,7 +174,7 @@ void init()
 		}
 	}
 
-    cout << "finish init" << endl;
+    cout << "finish init " << get_runtime() << endl;
 }
 
 #endif

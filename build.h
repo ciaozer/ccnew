@@ -6,10 +6,11 @@
 void settings()
 {
     seed = 1;
-    cutoff_time = 1000;
+    cutoff_time = 300;
     p_random_walk = 0.01;
-    rdprob = 0.6;
+    p_random2 = 0.6;
     p_without_hard_conf = 0.2;
+    bms = 15;
 }
 
 void w_allocate_memory()
@@ -29,10 +30,6 @@ void w_allocate_memory()
     neighbor = new int *[malloc_item];
     original_weight = new long long[malloc_element];
 
-    conflict_stack = new int[malloc_item];
-    index_in_conflict_stack = new int[malloc_item];
-    is_in_conflict_stack = new bool [malloc_item];
-
     solution_stack = new int[malloc_item];
     index_in_solution_stack = new int[malloc_item];
 
@@ -46,22 +43,25 @@ void w_allocate_memory()
 	is_in_gooditem_stack = new bool [malloc_item];
 	current_solution = new int [malloc_item];
 	best_solution = new int [malloc_item];
-	already_in_ccmpvars = new unsigned int [malloc_item];
+	already_in_ccitem = new unsigned int [malloc_item];
+    hard_cscc = new int [malloc_item];
+    uncovered_stack = new int [malloc_element];
+	index_in_uncovered_stack = new int [malloc_element];
+
+    W1 = new long long[malloc_item];
+    W2 = new long long[malloc_item];
+    W3 = new long long[malloc_item];
+    H1 = new bool[L];
+    H2 = new bool[L];
+    H3 = new bool[L];
 }
 
 void allocate_memory()
 {
-	int malloc_var_length = itemnum+10;
     int malloc_edgenum = edgenum+10;
-    int malloc_elementnum = elementnum+10;
-	
-	hard_cscc = new int [malloc_var_length];
 	
 	conflict_edge_stack = new int [malloc_edgenum];
 	index_in_conflict_edge_stack = new int [malloc_edgenum];
-	uncovered_stack = new int [edgenum+elementnum+10];
-	index_in_uncovered_stack = new int [edgenum+elementnum+10];
-
     edge = new int*[malloc_edgenum];
     node = new int[malloc_edgenum];
     edge_node_count = new int[malloc_edgenum];
@@ -94,10 +94,6 @@ void free_memory()
 
     delete[] original_weight;
 
-    delete[] conflict_stack;
-    delete[] index_in_conflict_stack;
-    delete[] is_in_conflict_stack;
-
     delete[] solution_stack;
     delete[] index_in_solution_stack;
 
@@ -120,13 +116,26 @@ void free_memory()
 	delete [] is_in_gooditem_stack;
 	delete [] current_solution;
 	delete [] best_solution;
-	delete [] already_in_ccmpvars;
+	delete [] already_in_ccitem;
 	
 	delete [] hard_cscc;
 	delete [] conflict_edge_stack;
 	delete [] index_in_conflict_edge_stack;
 	delete [] uncovered_stack;
 	delete [] index_in_uncovered_stack;
+
+    delete [] W1;
+	delete [] W2;
+	delete [] W3;
+	delete [] H1;
+	delete [] H2;
+	delete [] H3;
+}
+
+double get_runtime()
+{
+    times(&stop);
+    return (double)(stop.tms_utime - start.tms_utime +stop.tms_stime - start.tms_stime) / sysconf(_SC_CLK_TCK);
 }
 
 void build(char *filename)
@@ -300,13 +309,7 @@ void build(char *filename)
         }
     }
 
-    cout << "finish read file" << endl;
-}
-
-double get_runtime()
-{
-    times(&stop);
-    return (double)(stop.tms_utime - start.tms_utime +stop.tms_stime - start.tms_stime) / sysconf(_SC_CLK_TCK);
+    cout << "finish read file " << get_runtime() << endl;
 }
 
 void print_best_solution()

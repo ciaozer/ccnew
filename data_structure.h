@@ -13,6 +13,7 @@
 #include <sys/times.h>
 #include <unistd.h>
 #include <algorithm>
+#include <math.h>
 
 using namespace std;
 
@@ -29,6 +30,7 @@ int             max_tries = 1000;
 unsigned int    max_flips = 4000000000u;
 unsigned int    step;
 int             cutoff_time;
+double          opt_time;
 struct tms start, stop;
 
 //算例的基本性质，初始化后不再改变
@@ -59,8 +61,8 @@ int         solution_stack_count;
 int*        index_in_solution_stack;
 
 //概率与控制
-float   rdprob;
-int     hd_count_threshold;
+float   p_random2;
+int     bms;
 float   p_without_hard_conf;
 float   p_random_walk;
 
@@ -71,10 +73,6 @@ int*	index_in_conflict_edge_stack;
 int*	uncovered_stack;		
 int		uncovered_stack_count;
 int*	index_in_uncovered_stack;
-int*    conflict_stack;
-int     conflict_stack_count;
-int*    index_in_conflict_stack;
-bool*   is_in_conflict_stack;
 int*	gooditem_stack;		
 int		gooditem_stack_count;
 bool*	is_in_gooditem_stack;
@@ -89,6 +87,13 @@ long long*	time_stamp;
 long long*  score;
 int*	    conf_change;
 int*	    hard_cscc;			
-unsigned int* already_in_ccmpvars;
+unsigned int* already_in_ccitem;
 
+//tabu
+int L = pow(10, 9);
+long long *W1, *W2, *W3;
+bool *H1, *H2, *H3;
+long long hx1, hx2, hx3;
+
+int remain = 0;
 #endif

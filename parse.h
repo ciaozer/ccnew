@@ -60,6 +60,7 @@ void parse_args(int argc, char *argv[]){
         if( argc != 7 ){
             print_usage();
         }
+        srand(time(NULL));
         ITEMNUM = atoi(argv[2]);
         ELEMENTNUM = atoi(argv[3]);
         DENSITY = atof(argv[4]);
@@ -83,7 +84,7 @@ void parse_args(int argc, char *argv[]){
 
 	    for (i=0; i<max_tries; i++) 
 	    {	 
-	    	init();
+	    	init_random();
 	    	local_search();
 
 	    	if(best_uncovered_weight==0) break;
@@ -93,10 +94,10 @@ void parse_args(int argc, char *argv[]){
         double total_time = get_runtime();
         long long search_steps = (long long)i*(long long)max_flips+(long long)step;
 
-        printf("c totalTime = %lf\n",total_time);
-        printf("c searchSteps = %lld\n", search_steps);
-        printf("c Best found solution with minimum cost: %lld\n", best_uncovered_weight);
-        print_best_solution();
+        //printf("c totalTime = %lf\n",total_time);
+        //printf("c searchSteps = %lld\n", search_steps);
+        printf("%s: %lld\n", argv[2], best_uncovered_weight);
+        //print_best_solution();
 
 	    free_memory();
     }

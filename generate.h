@@ -8,7 +8,7 @@
 #include"build.h"
 
 #define WEIGHT 1
-#define MAX_WEIGHT 100
+#define MAX_WEIGHT 10000
 #define RAND 1000
 
 int ITEMNUM = 200;
@@ -18,6 +18,8 @@ int AVG_COVER_TIMES = 50;
 
 int *weight_for_generate;        //用于生成数据
 vector<vector<bool>> conflict_graph;
+vector<vector<int>> gene_g_item;
+int* gene_g_item_count;
 
 struct Item
 {
@@ -32,17 +34,17 @@ unordered_map<int, Item> data;
 
 void generate_weight()
 {
+    weight_for_generate = new int[ELEMENTNUM+10];
     switch (WEIGHT)
     {
     case 0:
-        for (int i = 1; i <= elementnum; i++)
+        for (int i = 0; i < elementnum; i++)
         {
             weight_for_generate[i] = 1;
         }
         break;
 
     case 1:
-        weight_for_generate = new int[ELEMENTNUM+10];
         for (int i = 0; i < ELEMENTNUM; i++)
         {
             int rand_weight = (random() % MAX_WEIGHT) + 1;
@@ -84,6 +86,29 @@ void generate_conflict_graph()
         }
 }
 
+void generate_g_item()
+{
+    gene_g_item_count = new int[itemnum+10];
+    gene_g_item = vector<vector<int>>(ITEMNUM+1, vector<int>(0));
+    for( int i=1; i<=itemnum; i++ )
+    {
+        gene_g_item_count[i] = 0;
+    }
+    for( int i=1; i<itemnum; i++ )
+    {
+        for( int j=i+1; j<=itemnum; j++ )
+        {
+            if( (random() % RAND / (double)RAND) < DENSITY )
+            {
+                gene_g_item[i].push_back(j);
+                gene_g_item[j].push_back(i);
+                gene_g_item_count[i]++;
+                gene_g_item_count[j]++;
+            }
+        }
+    }
+}
+
 void generate_data(string filename)
 {
     ofstream outfile;
@@ -120,10 +145,17 @@ void generate_data(string filename)
         outfile << endl;
 
         // show what items it conflicts with
-        outfile << itemtmp.conflict_num << endl;
-        for (int j = 1; j <= ITEMNUM; j++)
-            if (conflict_graph[i][j])
-                outfile << j << " ";
+        // outfile << itemtmp.conflict_num << endl;
+        // for (int j = 1; j <= ITEMNUM; j++)
+        //     if (conflict_graph[i][j])
+        //         outfile << j << " ";
+        // outfile << endl;
+
+        outfile << gene_g_item_count[i] << endl;
+        for( int j=0; j<gene_g_item_count[i]; j++ )
+        {
+            outfile << gene_g_item[i][j] << " ";
+        }
         outfile << endl;
     }
     outfile.close();
@@ -164,9 +196,11 @@ void generate_random_once(string filename)
     }
 
     // generate cover first or conflict message will lose.3
-    generate_conflict_graph();
+    //generate_conflict_graph();
+    generate_g_item();
     generate_data(filename);
     delete[] weight_for_generate;
+    delete[] gene_g_item_count;
 
     cout << "finish generate" << endl;
 }
@@ -215,6 +249,57 @@ void change_to_maxsat(char *input_filename, char *output_filename)
         for ( int j=0; j<n_ele_count[i]; j++ )
         {
             outfile << n_ele[i][j] << " ";
+        }
+        outfile << 0 << endl;
+    }
+
+    outfile.close();
+}
+
+void change_to_maxsat1(char *input_filename, char *output_filename)
+{
+    build(input_filename);
+
+    const int INF = total_weight + 1;
+
+    int edgenum = 0;
+
+    for ( int i=1; i<=itemnum; i++ )
+    {
+        edgenum += g_item_count[i];
+    }
+    edgenum = edgenum / 2;        //会重复计算所以除以2
+
+    ofstream outfile;
+    outfile.open(output_filename, ios::out);
+    if (!outfile.is_open())
+    {
+        cout << "read file error" << endl;
+        cout << "i am change_to_maxsat" << endl;
+        return;
+    }
+
+    outfile << "p wcnf " << itemnum << " " << edgenum + elementnum << " " << INF << endl;
+
+    for (int i = 1; i <= itemnum; i++)
+    {
+        for ( int j=0; j<g_item_count[i]; j++ )
+        {
+            if ( g_item[i][j] > i )         //防止重复输出
+            {
+                outfile << INF << " "
+                << i << " "
+                << g_item[i][j] << " " << 0 << endl;
+            }
+        }
+    }
+
+    for (int i = 0; i < elementnum; i++)
+    {
+        outfile << original_weight[i] << " ";
+        for ( int j=0; j<n_ele_count[i]; j++ )
+        {
+            outfile << "-" << n_ele[i][j] << " ";
         }
         outfile << 0 << endl;
     }
