@@ -3,8 +3,8 @@ TARGET = ccehc
 
 all: ${TARGET} clean
 
-${TARGET}: data_structure.h build.h init.h heuristic.h generate.h parse.h wscpc.cpp	
-	g++ ${CFLAGS} wscpc.cpp -o ${TARGET}
+${TARGET}: src/data_structure.h src/build.h src/init.h src/heuristic.h src/generate.h src/parse.h src/preprocess.h src/wscpc.cpp	
+	g++ ${CFLAGS} src/wscpc.cpp -o ${TARGET}
 
 clean:
 	rm -f *~
@@ -13,4 +13,4 @@ cleanup:
 	rm -f ${TARGET}
 	rm -f *~
 
-#g++ -g  wscpc.cpp init.h generate.h heuristic.h data_structure.h build.h parse.h -o debug
+#g++ -g  src/wscpc.cpp src/init.h src/generate.h src/heuristic.h src/data_structure.h src/build.h src/parse.h src/preprocess.h -o debug
